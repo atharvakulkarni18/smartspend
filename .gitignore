@@ -20,4 +20,5 @@ dist/
 .vscode/
 coverage/
 htmlcov/
+
 .env
