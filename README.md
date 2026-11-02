@@ -109,7 +109,7 @@
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/smartspend.git
+git clone https://github.com/atharvakulkarni18/smartspend.git
 cd smartspend
 
 # 2. Start all services with one command
@@ -287,21 +287,19 @@ smartspend/
 
 ---
 
-## 👨‍💻 About
+## 👨‍💻 Author
 
-Built by **[Your Name]** — Fresher from Pune, India 🇮🇳
+Built by **Atharva Kulkarni** — Software Engineer / Fresher from Pune, India 🇮🇳
 
 This project demonstrates proficiency in:
-- Full-stack Java development (Spring Boot ecosystem)
-- Microservices architecture
-- AI/ML integration in production applications  
-- React.js modern patterns
-- DevOps with Docker & GitHub Actions
-- FinTech domain knowledge
+- Full-stack Java development (Spring Boot 3, Spring Security, JPA/Hibernate)
+- Microservices architecture & inter-service async communication
+- AI/ML integration in production applications (Scikit-Learn, Isolation Forest)
+- React.js 18 modern UI/UX design (Chart.js, Context API)
+- DevOps with Docker Compose & GitHub Actions CI/CD
+- FinTech domain data engineering
 
-📧 Email: your.email@example.com  
-🔗 LinkedIn: [linkedin.com/in/yourprofile](https://linkedin.com)  
-🐙 GitHub: [github.com/yourusername](https://github.com)
+🐙 GitHub: [github.com/atharvakulkarni18](https://github.com/atharvakulkarni18)
 
 ---
 
