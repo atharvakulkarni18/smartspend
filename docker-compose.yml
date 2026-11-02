@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: smartspend-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: smartspend
+      POSTGRES_USER: smartspend_user
+      POSTGRES_PASSWORD: smartspend_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - smartspend-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartspend_user -d smartspend"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: smartspend-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - smartspend-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Python AI Microservice
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: smartspend-ai
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    networks:
+      - smartspend-network
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smartspend-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/smartspend
+      SPRING_DATASOURCE_USERNAME: smartspend_user
+      SPRING_DATASOURCE_PASSWORD: smartspend_password
+      SPRING_DATA_REDIS_HOST: redis
+      AI_SERVICE_URL: http://ai-service:8000
+      JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    networks:
+      - smartspend-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # React Frontend (served via nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smartspend-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - smartspend-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  smartspend-network:
+    driver: bridge
