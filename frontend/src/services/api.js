@@ -320,6 +320,7 @@ async function requestWithFallback(requestFn, mockFallback) {
     return res.data;
   } catch (error) {
     // If backend is unreachable or 404s during development, return mock data
+    if (error.response) throw error;
     console.warn('API call failed or backend offline. Using fallback data:', error.message);
     return mockFallback;
   }
