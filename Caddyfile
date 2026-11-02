@@ -1,0 +1,4 @@
+# Replace with your real DuckDNS subdomain. Caddy fetches and renews the HTTPS certificate automatically.
+YOUR-SUBDOMAIN.duckdns.org {
+	reverse_proxy backend:8080
+}

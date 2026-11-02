@@ -1,0 +1,104 @@
+# Production stack for a single VM (Oracle Cloud). Frontend is hosted on Vercel.
+# Usage:  docker compose -f docker-compose.prod.yml up -d --build
+# Only Caddy publishes ports (80/443). Everything else is reachable only
+# inside the Docker network, so Postgres/Redis/AI are not exposed to the internet.
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: smartspend-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: smartspend
+      POSTGRES_USER: smartspend_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - smartspend-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartspend_user -d smartspend"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: smartspend-redis
+    restart: unless-stopped
+    networks:
+      - smartspend-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: smartspend-ai
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - smartspend-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smartspend-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/smartspend
+      SPRING_DATASOURCE_USERNAME: smartspend_user
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      AI_SERVICE_URL: http://ai-service:8000
+      JWT_SECRET: ${JWT_SECRET}
+    networks:
+      - smartspend-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  caddy:
+    image: caddy:2
+    container_name: smartspend-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    networks:
+      - smartspend-network
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  smartspend-network:
+    driver: bridge
