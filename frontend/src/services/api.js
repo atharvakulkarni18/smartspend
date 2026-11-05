@@ -609,3 +609,8 @@ export const reportService = {
 };
 
 export default api;
+
+// Wake a sleeping free-tier backend as soon as the app loads
+if (typeof window !== 'undefined') {
+  fetch(`${BASE_URL}/actuator/health`, { mode: 'no-cors' }).catch(() => {});
+}
