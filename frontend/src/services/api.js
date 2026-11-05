@@ -614,3 +614,8 @@ export default api;
 if (typeof window !== 'undefined') {
   fetch(`${BASE_URL}/actuator/health`, { mode: 'no-cors' }).catch(() => {});
 }
+
+// Wake a sleeping free-tier backend as soon as the app loads
+if (typeof window !== 'undefined') {
+  fetch(`${BASE_URL}/actuator/health`, { mode: 'no-cors' }).catch(() => {});
+}
