@@ -7,10 +7,14 @@ const AuthContext = createContext(null);
 // Older builds stored this fake token. Treat it as "not logged in".
 const LEGACY_DEMO_TOKEN = 'demo-auth-token-active';
 
+// Real JWTs look like xxxxx.yyyyy.zzzzz and start with "eyJ". Anything else is a leftover fake token.
+const looksLikeJwt = (value) =>
+  typeof value === 'string' && /^eyJ[\w-]+\.[\w-]+\.[\w-]*$/.test(value);
+
 const readStoredToken = () => {
   try {
     const stored = localStorage.getItem('smartspend_token');
-    if (!stored || stored === LEGACY_DEMO_TOKEN) {
+    if (!stored || stored === LEGACY_DEMO_TOKEN || !looksLikeJwt(stored)) {
       localStorage.removeItem('smartspend_token');
       localStorage.removeItem('smartspend_user');
       return null;
@@ -31,8 +35,10 @@ const readStoredUser = () => {
 };
 
 // The backend may name the token field differently; accept the common names.
-const extractToken = (res) =>
-  res?.token || res?.accessToken || res?.access_token || res?.jwt || null;
+const extractToken = (res) => {
+  const candidate = res?.token || res?.accessToken || res?.access_token || res?.jwt || null;
+  return looksLikeJwt(candidate) ? candidate : null;
+};
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(readStoredToken);
@@ -62,7 +68,7 @@ export const AuthProvider = ({ children }) => {
   const completeAuth = (res, fallbackUser) => {
     const authToken = extractToken(res);
     if (!authToken) {
-      throw new Error('Server did not return a login token. Please try again.');
+      throw new Error('Could not sign in with the live server (it may still be waking up). Please try again in a minute.');
     }
     const authUser = res.user || fallbackUser;
 

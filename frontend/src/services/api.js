@@ -336,17 +336,6 @@ export const authService = {
       const response = await api.post('/api/auth/login', { email, password });
       return response.data;
     } catch (error) {
-      // Standalone fallback: validate test user or create session
-      if (email && password) {
-        return {
-          token: 'mock-jwt-smartspend-' + Date.now(),
-          user: {
-            ...MOCK_USER,
-            email: email,
-            name: email.split('@')[0].replace('.', ' ').toUpperCase(),
-          },
-        };
-      }
       throw error;
     }
   },
@@ -356,14 +345,7 @@ export const authService = {
       const response = await api.post('/api/auth/register', { name, email, password });
       return response.data;
     } catch (error) {
-      return {
-        token: 'mock-jwt-smartspend-' + Date.now(),
-        user: {
-          ...MOCK_USER,
-          name: name || 'Demo Member',
-          email: email || 'demo@smartspend.ai',
-        },
-      };
+      throw error;
     }
   },
 
