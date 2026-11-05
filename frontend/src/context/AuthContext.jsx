@@ -4,31 +4,40 @@ import { authService, MOCK_USER } from '../services/api';
 
 const AuthContext = createContext(null);
 
+// Older builds stored this fake token. Treat it as "not logged in".
+const LEGACY_DEMO_TOKEN = 'demo-auth-token-active';
+
+const readStoredToken = () => {
+  try {
+    const stored = localStorage.getItem('smartspend_token');
+    if (!stored || stored === LEGACY_DEMO_TOKEN) {
+      localStorage.removeItem('smartspend_token');
+      localStorage.removeItem('smartspend_user');
+      return null;
+    }
+    return stored;
+  } catch {
+    return null;
+  }
+};
+
+const readStoredUser = () => {
+  try {
+    const savedUser = localStorage.getItem('smartspend_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  } catch {
+    return null;
+  }
+};
+
+// The backend may name the token field differently; accept the common names.
+const extractToken = (res) =>
+  res?.token || res?.accessToken || res?.access_token || res?.jwt || null;
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    try {
-      const savedUser = localStorage.getItem('smartspend_user');
-      return savedUser ? JSON.parse(savedUser) : MOCK_USER; // Default to demo user for instant portfolio evaluation
-    } catch {
-      return MOCK_USER;
-    }
-  });
-
-  const [token, setToken] = useState(() => {
-    return localStorage.getItem('smartspend_token') || 'demo-auth-token-active';
-  });
-
+  const [token, setToken] = useState(readStoredToken);
+  const [user, setUser] = useState(() => (readStoredToken() ? readStoredUser() : null));
   const [loading, setLoading] = useState(false);
-
-  // Sync token into localStorage if initialized with demo
-  useEffect(() => {
-    if (!localStorage.getItem('smartspend_token')) {
-      localStorage.setItem('smartspend_token', 'demo-auth-token-active');
-    }
-    if (!localStorage.getItem('smartspend_user')) {
-      localStorage.setItem('smartspend_user', JSON.stringify(MOCK_USER));
-    }
-  }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem('smartspend_token');
@@ -50,22 +59,29 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener('smartspend_auth_change', handleAuthChange);
   }, []);
 
+  const completeAuth = (res, fallbackUser) => {
+    const authToken = extractToken(res);
+    if (!authToken) {
+      throw new Error('Server did not return a login token. Please try again.');
+    }
+    const authUser = res.user || fallbackUser;
+
+    localStorage.setItem('smartspend_token', authToken);
+    localStorage.setItem('smartspend_user', JSON.stringify(authUser));
+    setToken(authToken);
+    setUser(authUser);
+    return authUser;
+  };
+
   const login = async (email, password) => {
     setLoading(true);
     try {
       const res = await authService.login(email, password);
-      const authToken = res.token || 'jwt-' + Date.now();
-      const authUser = res.user || {
+      const authUser = completeAuth(res, {
         ...MOCK_USER,
         email,
         name: email.split('@')[0],
-      };
-
-      localStorage.setItem('smartspend_token', authToken);
-      localStorage.setItem('smartspend_user', JSON.stringify(authUser));
-
-      setToken(authToken);
-      setUser(authUser);
+      });
       toast.success(`Welcome back, ${authUser.name}!`);
       return { success: true };
     } catch (err) {
@@ -81,18 +97,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const res = await authService.register(name, email, password);
-      const authToken = res.token || 'jwt-' + Date.now();
-      const authUser = res.user || {
-        ...MOCK_USER,
-        name,
-        email,
-      };
-
-      localStorage.setItem('smartspend_token', authToken);
-      localStorage.setItem('smartspend_user', JSON.stringify(authUser));
-
-      setToken(authToken);
-      setUser(authUser);
+      completeAuth(res, { ...MOCK_USER, name, email });
       toast.success(`Welcome to SmartSpend, ${name}!`);
       return { success: true };
     } catch (err) {
