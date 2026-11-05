@@ -1,0 +1,50 @@
+# Render Blueprint: deploys the AI service and the Spring Boot backend (free plan).
+# Frontend is on Vercel. Database is on Neon (you paste its details when Render asks).
+
+services:
+  - type: web
+    name: smartspend-ai
+    runtime: docker
+    plan: free
+    dockerfilePath: ./ai-service/Dockerfile
+    dockerContext: ./ai-service
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: PYTHONUNBUFFERED
+        value: "1"
+
+  - type: web
+    name: smartspend-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: PORT
+        value: "8080"
+      # Free instances have 512 MB RAM, so cap the Java heap
+      - key: JAVA_TOOL_OPTIONS
+        value: "-Xmx320m -XX:+UseSerialGC"
+      # Render asks you for these three when you apply the Blueprint (Neon details)
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      # Render generates a random secret for you
+      - key: JWT_SECRET
+        generateValue: true
+      # If your AI service URL in the Render dashboard is different, edit this value there
+      - key: AI_SERVICE_URL
+        value: https://smartspend-ai.onrender.com
+      # No Redis or real mail server on the free setup: keep them from failing the health check
+      - key: MANAGEMENT_HEALTH_REDIS_ENABLED
+        value: "false"
+      - key: MANAGEMENT_HEALTH_MAIL_ENABLED
+        value: "false"
+      - key: SPRING_CACHE_TYPE
+        value: none
