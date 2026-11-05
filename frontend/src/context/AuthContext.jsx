@@ -35,8 +35,12 @@ const readStoredUser = () => {
 };
 
 // The backend may name the token field differently; accept the common names.
+// The backend wraps replies as { success, message, data: { accessToken, name, email, role, ... } }
+const unwrap = (res) => (res?.data && typeof res.data === 'object' ? res.data : res);
+
 const extractToken = (res) => {
-  const candidate = res?.token || res?.accessToken || res?.access_token || res?.jwt || null;
+  const body = unwrap(res);
+  const candidate = body?.accessToken || body?.token || body?.access_token || body?.jwt || null;
   return looksLikeJwt(candidate) ? candidate : null;
 };
 
@@ -70,7 +74,14 @@ export const AuthProvider = ({ children }) => {
     if (!authToken) {
       throw new Error('Could not sign in with the live server (it may still be waking up). Please try again in a minute.');
     }
-    const authUser = res.user || fallbackUser;
+    const body = unwrap(res);
+    const authUser = res.user || body.user || {
+      ...fallbackUser,
+      ...(body.name ? { name: body.name } : {}),
+      ...(body.email ? { email: body.email } : {}),
+      ...(body.role ? { role: body.role } : {}),
+      ...(body.userId ? { id: body.userId } : {}),
+    };
 
     localStorage.setItem('smartspend_token', authToken);
     localStorage.setItem('smartspend_user', JSON.stringify(authUser));
