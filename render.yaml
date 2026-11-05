@@ -23,11 +23,9 @@ services:
     dockerContext: ./backend
     healthCheckPath: /actuator/health
     envVars:
-      - key: PORT
-        value: "8080"
       # Free instances have 512 MB RAM, so cap the Java heap
       - key: JAVA_TOOL_OPTIONS
-        value: "-Xmx320m -XX:+UseSerialGC"
+        value: "-Xmx320m -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
       # Render asks you for these three when you apply the Blueprint (Neon details)
       - key: SPRING_DATASOURCE_URL
         sync: false
