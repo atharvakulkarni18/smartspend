@@ -181,6 +181,9 @@ user_spending_history: Dict[int, List[float]] = {}
 
 def detect_transaction_anomaly(user_id: int, amount: float, category: str, recent_txns: List[Dict]) -> tuple:
     """Use statistical methods to detect anomalous transactions."""
+    # Regular income such as salary is not a spending anomaly
+    if category and category.strip().lower() in ("salary", "income"):
+        return False, 0.05, None
     
     amounts = [t.get("amount", 0) for t in recent_txns if t.get("amount", 0) > 0]
     
