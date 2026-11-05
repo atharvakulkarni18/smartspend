@@ -342,7 +342,7 @@ export const authService = {
 
   register: async (name, email, password) => {
     try {
-      const response = await api.post('/api/auth/register', { name, email, password });
+      const response = await api.post('/api/auth/register', { name, email, password, confirmPassword: password });
       return response.data;
     } catch (error) {
       throw error;
