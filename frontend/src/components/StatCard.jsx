@@ -6,6 +6,7 @@ const StatCard = ({
   value,
   change,
   isPositive,
+  trendUp,
   icon,
   gradient = 'var(--gradient-primary)',
   subtext = 'vs. last month',
@@ -76,7 +77,7 @@ const StatCard = ({
               }`,
             }}
           >
-            {isPositive ? <FiTrendingUp /> : <FiTrendingDown />}
+            {(trendUp ?? isPositive) ? <FiTrendingUp /> : <FiTrendingDown />}
             {change}
           </span>
         )}

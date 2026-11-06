@@ -77,4 +77,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     List<Transaction> findTop10ByUserId(@Param("userId") Long userId, Pageable pageable);
 
     Optional<Transaction> findByIdAndAccountUserId(Long id, Long userId);
+
+    @Query("SELECT MAX(t.transactionDate) FROM Transaction t WHERE t.account.user.id = :userId")
+    LocalDate findLatestTransactionDate(@Param("userId") Long userId);
 }

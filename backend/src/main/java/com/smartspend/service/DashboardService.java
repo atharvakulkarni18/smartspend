@@ -28,7 +28,10 @@ public class DashboardService {
     private final BudgetService budgetService;
 
     public DashboardResponse getDashboardData(Long userId) {
-        LocalDate now = LocalDate.now();
+        // Use the month of the latest transaction, so the dashboard is never empty
+        LocalDate latestTxnDate = transactionRepository.findLatestTransactionDate(userId);
+        LocalDate now = (latestTxnDate != null && latestTxnDate.isBefore(LocalDate.now()))
+                ? latestTxnDate : LocalDate.now();
         LocalDate startOfMonth = now.withDayOfMonth(1);
         LocalDate endOfMonth = now.withDayOfMonth(now.lengthOfMonth());
 

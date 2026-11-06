@@ -131,6 +131,21 @@ const DashboardPage = () => {
     );
   }
 
+  // Real month-over-month changes from the backend monthly trends (no placeholder numbers)
+  const trends = Array.isArray(data?.monthlyTrends) ? data.monthlyTrends : [];
+  const curTrend = trends.length > 0 ? trends[trends.length - 1] : null;
+  const prevTrend = trends.length > 1 ? trends[trends.length - 2] : null;
+  const pctChange = (cur, prev) => {
+    const c = Number(cur);
+    const p = Number(prev);
+    if (!p || p <= 0 || Number.isNaN(c)) return null;
+    const pct = ((c - p) / p) * 100;
+    return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+  };
+  const incomeChange = curTrend && prevTrend ? pctChange(curTrend.income, prevTrend.income) : null;
+  const expenseChange = curTrend && prevTrend ? pctChange(curTrend.expense, prevTrend.expense) : null;
+  const refMonth = curTrend?.month || 'this month';
+
   // Setup Line Chart data
   const trendLabels = data?.monthlyTrends?.labels || 
     (Array.isArray(data?.monthlyTrends) ? data.monthlyTrends.map(m => m.month) : ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct']);
@@ -221,32 +236,37 @@ const DashboardPage = () => {
         <StatCard 
           title="Total Net Worth / Balance" 
           value={`₹${(data?.totalBalance || 0).toLocaleString()}`}
-          change={data?.balanceChange || '+12.4%'}
+          change={null}
           isPositive={true}
+          subtext={`across ${data?.activeAccountsCount ?? 0} active account(s)`}
           icon={<FiDollarSign />}
           gradient="linear-gradient(135deg, #6366f1, #4f46e5)"
         />
         <StatCard 
           title="Monthly Income" 
           value={`₹${(data?.totalIncome || 0).toLocaleString()}`}
-          change={data?.incomeChange || '+8.2%'}
-          isPositive={true}
+          change={incomeChange}
+          isPositive={incomeChange ? !incomeChange.startsWith('-') : true}
+          subtext={incomeChange ? 'vs. previous month' : `in ${refMonth}`}
           icon={<FiArrowUpRight />}
           gradient="linear-gradient(135deg, #10b981, #059669)"
         />
         <StatCard 
           title="Monthly Expenses" 
           value={`₹${(data?.totalExpense || 0).toLocaleString()}`}
-          change={data?.expenseChange || '-4.1%'}
-          isPositive={false}
+          change={expenseChange}
+          isPositive={expenseChange ? expenseChange.startsWith('-') : true}
+          trendUp={expenseChange ? !expenseChange.startsWith('-') : undefined}
+          subtext={expenseChange ? 'vs. previous month' : `in ${refMonth}`}
           icon={<FiArrowDownRight />}
           gradient="linear-gradient(135deg, #ef4444, #dc2626)"
         />
         <StatCard 
           title="Net Savings Rate" 
-          value={`${data?.savingsRate || 61.3}%`}
+          value={`${Number(data?.savingsRate ?? 0).toFixed(1)}%`}
           change={`₹${(data?.netSavings || 0).toLocaleString()} saved`}
           isPositive={true}
+          subtext={`in ${refMonth}`}
           icon={<FiPieChart />}
           gradient="linear-gradient(135deg, #8b5cf6, #7c3aed)"
         />
